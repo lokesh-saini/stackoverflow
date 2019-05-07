@@ -1,7 +1,7 @@
 import user from './user'
-import question from './question'
+import stack from './stack'
 
 export default [
   user,
-  question
+  stack
 ]

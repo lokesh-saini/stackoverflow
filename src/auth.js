@@ -1,5 +1,5 @@
 import { AuthenticationError } from 'apollo-server-express'
-import { User } from './models'
+import { User, Question } from './models'
 import { SESS_NAME } from './config'
 
 export const attemptSignIn = async (email, password) => {
@@ -38,3 +38,12 @@ export const signOut = (req, res) => new Promise(
     })
   }
 )
+
+export const checkValidUser = async (id, req) => {
+  const message = 'You cannot correct this answer'
+  const question = await Question.find({ ansids: id })
+  if (!question || question.userId === req.session.userId) {
+    throw new AuthenticationError(message)
+  }
+  return question
+}

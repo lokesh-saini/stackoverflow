@@ -1,9 +1,9 @@
 import user from './user'
-import question from './question'
+import stack from './stack'
 import root from './root'
 
 export default [
   root,
   user,
-  question
+  stack
 ]
