@@ -28,7 +28,7 @@ export default {
   Mutation: {
     signUp: async (root, args, { req }, info) => {
       Auth.checkSignedOut(req)
-      await Joi.validate(args, signUp, { abortEarly: false })
+      await Joi.validate(args, signUp)
       const user = await User.create(args)
       req.session.userId = user.id
       return user
@@ -39,7 +39,7 @@ export default {
       if (userId) {
         return User.findById(userId)
       }
-      await Joi.validate(args, signIn, { abortEarly: false })
+      await Joi.validate(args, signIn)
 
       const user = await Auth.attemptSignIn(args.email, args.password)
 
