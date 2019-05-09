@@ -3,11 +3,12 @@ import connectRedis from 'connect-redis'
 import { ApolloServer } from 'apollo-server-express'
 import express from 'express'
 import mongoose from 'mongoose'
+import jwt from 'jsonwebtoken'
 import typeDefs from './typeDefs'
 import resolvers from './resolvers'
 
 import { APP_PORT, IN_PROD, DB_HOST, DB_PORT, DB_NAME, SESS_NAME, SESS_SECRET, SESS_LIFETIME, REDIS_HOST,
-  REDIS_PORT } from './config'
+  REDIS_PORT, JWT_SECRET } from './config'
 
 (async () => {
   try {
@@ -44,10 +45,28 @@ import { APP_PORT, IN_PROD, DB_HOST, DB_PORT, DB_NAME, SESS_NAME, SESS_SECRET, S
       }
     }))
 
+    app.use(async (req, res, next) => {
+      const token = req.headers['authorization']
+      console.log('Token',token)
+      if(token != undefined) {
+        try {
+          const currentUser = await jwt.verify(token, JWT_SECRET)
+          console.log('Current user', currentUser)
+          req.currentUser = currentUser
+        } catch (err) {
+          console.error(err)
+        }
+      }
+      next()
+    })
+
     const server = new ApolloServer({
       typeDefs,
       resolvers,
-      cors: false,
+      cors: {
+        origin: '*',
+        credentials: 'include'
+      },
       playground: IN_PROD ? false : {
         settings: {
           'request.credentials': 'include'

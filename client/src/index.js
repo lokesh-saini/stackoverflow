@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {Fragment} from 'react'
 import ReactDOM from 'react-dom'
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom'
 
@@ -9,25 +9,53 @@ import './index.css'
 import App from './components/App'
 import Signup from './components/Auth/Signup'
 import Signin from './components/Auth/Signin'
+import withSession from './components/withSession'
+import Navbar from './components/Navbar'
 
 
 const client = new ApolloClient({
-    uri: "http://localhost:3001/graphql"
+    uri: "http://localhost:3001/graphql",
+    fetchOptions: {
+        credentials: 'include'
+    },
+    request: operation => {
+        const user = JSON.parse(localStorage.getItem('user'))
+        if(user) {
+            operation.setContext({
+                headers: {
+                    authorization: user.token
+                }
+            })
+        }
+    },
+    onError: ({networkError}) => {
+        if(networkError) {
+            console.log('Network Error', networkError)
+            if(networkError.statusCode === 401) {
+                localStorage.removeItem('user')
+            }
+        }
+    }
 })
 
-const Root = () => (
+const Root = ({ refetch }) => (
     <Router>
-    <Switch>
-        <Route path="/" exact component={App} />
-        <Route path="/signin" exact component={Signin} />
-        <Route path="/signup" exact component={Signup} />
-        <Redirect to="/" />
-    </Switch>
+    <Fragment>
+        <Navbar />
+        <Switch>
+            <Route path="/" exact component={App} />
+            <Route path="/signin" render = {() => <Signin refetch={refetch} />} />
+            <Route path="/signup" render = {() => <Signup refetch={refetch} />} />
+            <Redirect to="/" />
+        </Switch>
+    </Fragment>
     </Router>
 )
 
+const RootWithSession = withSession(Root)
+
 ReactDOM.render(
     <ApolloProvider client={client}>
-    <Root />
+    <RootWithSession />
     </ApolloProvider>,
     document.getElementById('root'))

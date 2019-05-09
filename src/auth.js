@@ -1,10 +1,17 @@
 import { AuthenticationError } from 'apollo-server-express'
+import jwt from 'jsonwebtoken'
 import { User, Question } from './models'
-import { SESS_NAME } from './config'
+import { SESS_NAME, JWT_SECRET } from './config'
+
+const createToken = (user, secret, expiresIn) => {
+  const { email } = user
+  return jwt.sign({ email }, secret, {expiresIn})
+}
 
 export const attemptSignIn = async (email, password) => {
   const message = 'Incorrect email or password. Please try again'
-  const user = await User.findOne({ email })
+  const token = await createToken({ email }, JWT_SECRET, '5hr')
+  const user = await User.findOneAndUpdate({ 'email': email }, {$set: {token: token}}, {new: true})
   if (!user) {
     throw new AuthenticationError(message)
   }
@@ -15,19 +22,30 @@ export const attemptSignIn = async (email, password) => {
   return user
 }
 
-const signedIn = req => req.session.userId
+// const signedIn = async req => {
+//   const user = await User.findById(req.session.userId)
+//   if(user === null) {
+//     return false
+//   }
+//   return user
+// }
 
-export const checkSignedIn = req => {
-  if (!signedIn(req)) {
-    throw new AuthenticationError('You must be signed in')
+export const checkSignedIn = async req => {
+  try {
+    const user = await User.find({email: req.currentUser.email})
+    if (!user) {
+      throw new AuthenticationError('You must be signed in')
+    }
+  } catch (err) {
+    throw new Error(err)
   }
 }
 
-export const checkSignedOut = req => {
-  if (signedIn(req)) {
-    throw new AuthenticationError('You are already signed in')
-  }
-}
+// export const checkSignedOut = req => {
+//   if (signedIn(req)) {
+//     throw new AuthenticationError('You are already signed in')
+//   }
+// }
 
 export const signOut = (req, res) => new Promise(
   (resolve, reject) => {

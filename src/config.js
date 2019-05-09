@@ -10,7 +10,9 @@ export const {
   SESS_LIFETIME = 1000 * 60 * 60 * 2,
 
   REDIS_HOST = 'localhost',
-  REDIS_PORT = 6379
+  REDIS_PORT = 6379,
+
+  JWT_SECRET = 'qwertyuiopasdfghjklzxcvbnm'
 } = process.env
 
 export const IN_PROD = NODE_ENV === 'production'

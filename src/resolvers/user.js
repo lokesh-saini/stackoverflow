@@ -7,18 +7,19 @@ import * as Auth from '../auth'
 
 export default {
   Query: {
-    me: (root, args, { req }, info) => {
-      Auth.checkSignedIn(req)
+    me: async (root, args, { req }, info) => {
+      await Auth.checkSignedIn(req)
 
-      return User.findById(req.session.userId)
+      return User.findOne({email: req.currentUser.email})
     },
-    users: (root, args, { req }, info) => {
-      Auth.checkSignedIn(req)
+    users: async (root, args, { req }, info) => {
+      // console.log('Request', req.session)
+      await Auth.checkSignedIn(req)
 
       return User.find({})
     },
-    user: (root, { id }, { req }, info) => {
-      Auth.checkSignedIn(req)
+    user: async (root, { id }, { req }, info) => {
+      await Auth.checkSignedIn(req)
       if (!mongoose.Types.ObjectId.isValid()) {
         throw new UserInputError(`${id} is not valid user id`)
       }
@@ -27,29 +28,29 @@ export default {
   },
   Mutation: {
     signUp: async (root, args, { req }, info) => {
-      Auth.checkSignedOut(req)
+      // Auth.checkSignedOut(req)
       await Joi.validate(args, signUp)
       const user = await User.create(args)
       req.session.userId = user.id
       return user
     },
     signIn: async (root, args, { req }, info) => {
-      const { userId } = req.session
+      // const { userId } = req.session
 
-      if (userId) {
-        return User.findById(userId)
-      }
+      // if (userId) {
+      //   return User.findById(userId)
+      // }
       await Joi.validate(args, signIn)
 
       const user = await Auth.attemptSignIn(args.email, args.password)
-
-      req.session.userId = user.id
+      req.session.userId = user._id
+      // console.log('Session',req.currentUser.email)
 
       return user
     },
-    signOut: (root, args, { req, res }, info) => {
-      Auth.checkSignedIn(req)
-
+    signOut: async (root, args, { req, res }, info) => {
+      await Auth.checkSignedIn(req)
+      await User.findByIdAndUpdate(req.session.userId, {token: ''})
       return Auth.signOut(req, res)
     }
   }
